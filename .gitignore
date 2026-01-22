@@ -1,0 +1,19 @@
+# macOS
+.DS_Store
+
+# Xcode: per-user files
+xcuserdata/
+*.xcuserstate
+
+# Xcode: build output
+build/
+DerivedData/
+
+# Debug/archiving artifacts
+*.dSYM
+*.dSYM.zip
+*.ipa
+
+# Logs
+*.log
+
