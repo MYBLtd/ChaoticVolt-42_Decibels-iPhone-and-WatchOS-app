@@ -152,6 +152,7 @@ class BluetoothManager: NSObject, ObservableObject {
     private var writeCharacteristic: CBCharacteristic?
     private var statusCharacteristic: CBCharacteristic?
     private var galacticStatusCharacteristic: CBCharacteristic?
+    private var connectionTimeoutTask: Task<Void, Never>?
     
     // Speaker UUIDs
     nonisolated(unsafe) private let serviceUUID = CBUUID(string: "00000001-1234-5678-9ABC-DEF012345678")
@@ -168,8 +169,10 @@ class BluetoothManager: NSObject, ObservableObject {
         // Add more prefixes as needed for your device naming scheme
     ]
     
-    // OTA Manager
+    // OTA Manager (iOS/iPadOS only)
+    #if !os(watchOS)
     @Published var otaManager = OTAManager()
+    #endif
     
     // MARK: - Initialization
     
@@ -184,8 +187,19 @@ class BluetoothManager: NSObject, ObservableObject {
     /// - Parameter showAllDevices: If true, shows all BLE devices (for debugging). Default is false.
     func startScanning(showAllDevices: Bool = false) {
         guard centralManager.state == .poweredOn else {
+            #if os(watchOS)
+            // watchOS may take a few seconds to initialize BLE after app launch
+            print("⏳ Bluetooth not ready yet, retrying in 1 second...")
+            connectionState = .scanning
+            Task {
+                try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
+                startScanning(showAllDevices: showAllDevices)
+            }
+            return
+            #else
             connectionState = .error("Bluetooth is not available")
             return
+            #endif
         }
         
         discoveredSpeakers.removeAll()
@@ -219,10 +233,35 @@ class BluetoothManager: NSObject, ObservableObject {
     func connect(to peripheral: CBPeripheral) {
         stopScanning()
         connectionState = .connecting
+        
+        // Cancel any existing timeout
+        connectionTimeoutTask?.cancel()
+        
+        // Set a timeout for connection (watchOS has shorter range/weaker antenna)
+        #if os(watchOS)
+        let timeoutDuration: UInt64 = 15_000_000_000 // 15 seconds for Watch
+        #else
+        let timeoutDuration: UInt64 = 10_000_000_000 // 10 seconds for iOS
+        #endif
+        
+        connectionTimeoutTask = Task { @MainActor in
+            try? await Task.sleep(nanoseconds: timeoutDuration)
+            
+            if connectionState == .connecting {
+                print("⏱️ Connection timeout - cancelling connection attempt")
+                centralManager.cancelPeripheralConnection(peripheral)
+                connectionState = .error("Connection timed out. Move closer to the speaker and try again.")
+            }
+        }
+        
         centralManager.connect(peripheral, options: nil)
     }
     
     func disconnect() {
+        // Cancel timeout task if active
+        connectionTimeoutTask?.cancel()
+        connectionTimeoutTask = nil
+        
         if let speaker = connectedSpeaker {
             centralManager.cancelPeripheralConnection(speaker)
         }
@@ -341,13 +380,19 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     nonisolated func centralManager(_ central: CBCentralManager, didConnect peripheral: CBPeripheral) {
         Task { @MainActor in
+            // Cancel timeout since connection succeeded
+            connectionTimeoutTask?.cancel()
+            connectionTimeoutTask = nil
+            
             print("Connected to \(peripheral.name ?? "Unknown")")
             connectedSpeaker = peripheral
             connectionState = .connected
             peripheral.delegate = self
             
-            // Set peripheral for OTA manager
+            // Set peripheral for OTA manager (iOS/iPadOS only)
+            #if !os(watchOS)
             otaManager.setPeripheral(peripheral)
+            #endif
             
             // Discover all services (nil = discover all)
             // This ensures we find the service containing GALACTIC_STATUS and OTA characteristics
@@ -357,7 +402,19 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     nonisolated func centralManager(_ central: CBCentralManager, didFailToConnect peripheral: CBPeripheral, error: Error?) {
         Task { @MainActor in
-            connectionState = .error("Failed to connect: \(error?.localizedDescription ?? "Unknown error")")
+            // Cancel timeout task
+            connectionTimeoutTask?.cancel()
+            connectionTimeoutTask = nil
+            
+            let errorMessage = error?.localizedDescription ?? "Unknown error"
+            print("❌ Failed to connect: \(errorMessage)")
+            
+            #if os(watchOS)
+            // Provide Watch-specific guidance
+            connectionState = .error("Connection failed. Move closer to the speaker and try again.")
+            #else
+            connectionState = .error("Failed to connect: \(errorMessage)")
+            #endif
         }
     }
     
@@ -409,6 +466,7 @@ extension BluetoothManager: CBPeripheralDelegate {
             print("   - \(char.uuid) [props: \(char.properties.rawValue)]")
         }
         
+        #if !os(watchOS)
         // Check if this service has OTA characteristics
         let otaUUIDs = [
             OTAManager.OTACharacteristics.credentials,
@@ -431,6 +489,7 @@ extension BluetoothManager: CBPeripheralDelegate {
         } else {
             print("   ℹ️ No OTA characteristics in this service")
         }
+        #endif
         
         for characteristic in characteristics {
             print("Discovered characteristic: \(characteristic.uuid), properties: \(characteristic.properties)")
@@ -527,9 +586,13 @@ extension BluetoothManager: CBPeripheralDelegate {
                 parseGalacticStatus(data)
             } else if characteristic.uuid == statusNotifyUUID {
                 parseStatusResponse(data)
-            } else if characteristic.uuid == OTAManager.OTACharacteristics.status {
-                // Handle OTA status updates
-                otaManager.handleStatusUpdate(data)
+            } else {
+                #if !os(watchOS)
+                if characteristic.uuid == OTAManager.OTACharacteristics.status {
+                    // Handle OTA status updates
+                    otaManager.handleStatusUpdate(data)
+                }
+                #endif
             }
         }
     }
