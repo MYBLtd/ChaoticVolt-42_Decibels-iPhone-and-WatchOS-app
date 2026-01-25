@@ -9,6 +9,35 @@ import SwiftUI
 import CoreBluetooth
 import Combine
 
+// MARK: - Color Extension for Hex
+
+extension Color {
+    init(hex: String) {
+        let hex = hex.trimmingCharacters(in: CharacterSet.alphanumerics.inverted)
+        var int: UInt64 = 0
+        Scanner(string: hex).scanHexInt64(&int)
+        let a, r, g, b: UInt64
+        switch hex.count {
+        case 3: // RGB (12-bit)
+            (a, r, g, b) = (255, (int >> 8) * 17, (int >> 4 & 0xF) * 17, (int & 0xF) * 17)
+        case 6: // RGB (24-bit)
+            (a, r, g, b) = (255, int >> 16, int >> 8 & 0xFF, int & 0xFF)
+        case 8: // ARGB (32-bit)
+            (a, r, g, b) = (int >> 24, int >> 16 & 0xFF, int >> 8 & 0xFF, int & 0xFF)
+        default:
+            (a, r, g, b) = (1, 1, 1, 0)
+        }
+
+        self.init(
+            .sRGB,
+            red: Double(r) / 255,
+            green: Double(g) / 255,
+            blue:  Double(b) / 255,
+            opacity: Double(a) / 255
+        )
+    }
+}
+
 struct ContentView: View {
     @StateObject private var bluetoothManager = BluetoothManager()
     @State private var showingScanSheet = false
@@ -16,6 +45,9 @@ struct ContentView: View {
     @State private var panicModeTimer: Timer?
     @State private var currentTime = Date()  // For updating Last Contact display
     @State private var isDetailedStatusExpanded = true  // Expanded by default
+    
+    // ChaoticVolt brand color
+    private let brandPurple = Color(hex: "6F4CFF")
     
     // Timer to refresh the Last Contact display every second
     let timer = Timer.publish(every: 1, on: .main, in: .common).autoconnect()
@@ -42,16 +74,19 @@ struct ContentView: View {
     
     private var navigationContent: some View {
         NavigationStack {
-            ScrollView {
-                VStack(spacing: 20) {
-                    // Galactic Status (when connected and available)
-                    if case .connected = bluetoothManager.connectionState,
-                       let galacticStatus = bluetoothManager.galacticStatus {
+            VStack(spacing: 0) {
+                // Branded Header with Logo and Device Info
+                brandedHeader
+                
+                ScrollView {
+                    VStack(spacing: 20) {
+                        // Galactic Status (when connected and available)
+                        if case .connected = bluetoothManager.connectionState,
+                           let galacticStatus = bluetoothManager.galacticStatus {
                         
                         // Interactive Shield Status Pills (TOP ROW)
                         shieldStatusPills(status: galacticStatus)
                             .padding(.horizontal)
-                            .padding(.top)
                         
                         // DSP Preset Selection (SECOND ROW)
                         VStack(alignment: .leading, spacing: 12) {
@@ -63,7 +98,8 @@ struct ContentView: View {
                                 ForEach(BluetoothManager.DSPPreset.allCases, id: \.self) { preset in
                                     PresetButton(
                                         preset: preset,
-                                        isSelected: bluetoothManager.currentPreset == preset
+                                        isSelected: bluetoothManager.currentPreset == preset,
+                                        brandColor: brandPurple
                                     ) {
                                         bluetoothManager.setPreset(preset)
                                     }
@@ -117,16 +153,68 @@ struct ContentView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 }
                                 
+                                Divider()
+                                
+                                // System Volume (informational only - per FSD 10.1)
+                                VStack(alignment: .leading, spacing: 8) {
+                                    HStack(spacing: 8) {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                            .font(.title3)
+                                            .foregroundStyle(.cyan)
+                                            .frame(width: 30)
+                                        
+                                        VStack(alignment: .leading, spacing: 2) {
+                                            Text("System Volume")
+                                                .font(.caption)
+                                                .foregroundStyle(.secondary)
+                                            
+                                            Text("\(galacticStatus.effectiveVolume)%")
+                                                .font(.headline)
+                                        }
+                                        
+                                        Spacer()
+                                    }
+                                    
+                                    // Show volume cap information if applicable
+                                    if let capDescription = galacticStatus.volumeCapDescription {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "info.circle")
+                                                .font(.caption2)
+                                                .foregroundStyle(.orange)
+                                            
+                                            Text(capDescription)
+                                                .font(.caption2)
+                                                .foregroundStyle(.orange)
+                                        }
+                                        .padding(.leading, 38)
+                                    }
+                                    
+                                    // Show "Safe headroom active" if normalizer is limiting
+                                    if galacticStatus.shieldStatus.isLimiterActive {
+                                        HStack(spacing: 6) {
+                                            Image(systemName: "checkmark.shield")
+                                                .font(.caption2)
+                                                .foregroundStyle(.green)
+                                            
+                                            Text("Safe headroom active")
+                                                .font(.caption2)
+                                                .foregroundStyle(.green)
+                                        }
+                                        .padding(.leading, 38)
+                                    }
+                                    
+                                    Text("Control volume with iPhone buttons")
+                                        .font(.caption2)
+                                        .foregroundStyle(.tertiary)
+                                        .padding(.leading, 38)
+                                }
+                                
                                 // Optional: Energy/Volume/Battery
-                                if galacticStatus.energyCoreLevel > 0 || galacticStatus.distortionFieldStrength > 0 || galacticStatus.energyCore > 0 {
+                                if galacticStatus.energyCoreLevel > 0 || galacticStatus.energyCore > 0 {
                                     Divider()
                                     
                                     if galacticStatus.energyCoreLevel > 0 {
                                         compactMeter(title: "Energy Core", value: galacticStatus.energyCoreLevel, color: .yellow, icon: "bolt.fill")
-                                    }
-                                    
-                                    if galacticStatus.distortionFieldStrength > 0 {
-                                        compactMeter(title: "Distortion Field", value: galacticStatus.distortionFieldStrength, color: .orange, icon: "waveform")
                                     }
                                     
                                     if galacticStatus.energyCore > 0 {
@@ -147,7 +235,7 @@ struct ContentView: View {
                             }
                         }
                         .padding(.horizontal)
-                        .tint(.cyan)
+                        .tint(brandPurple)
                         
                         // Audio Duck Mode Indicator (when active)
                         if dontPanicMode {
@@ -192,8 +280,10 @@ struct ContentView: View {
                             .transition(.move(edge: .top).combined(with: .opacity))
                         }
                         
-                        // Connection Status (BOTTOM ROW)
-                        connectionStatusView
+                        // OTA Firmware Update Section
+                        OTASettingsView(bluetoothManager: bluetoothManager, brandColor: brandPurple)
+                        
+                        }  // Close the if case .connected, let galacticStatus block
                     }
                     
                     if case .connected = bluetoothManager.connectionState {
@@ -218,41 +308,132 @@ struct ContentView: View {
                         .padding()
                     }
                 }
+                .padding(.top, 20)
             }
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        if case .connected = bluetoothManager.connectionState {
-                            bluetoothManager.disconnect()
-                        } else {
-                            showingScanSheet = true
-                        }
-                    } label: {
-                        if case .connected = bluetoothManager.connectionState {
-                            Label("Disconnect", systemImage: "xmark.circle")
-                        } else {
-                            Label("Connect", systemImage: "plus.circle")
-                        }
-                    }
-                }
-                
-                // Quick Duck button (only visible when connected)
-                if case .connected = bluetoothManager.connectionState {
-                    ToolbarItem(placement: .secondaryAction) {
-                        Button {
-                            toggleDontPanicMode()
-                        } label: {
-                            Label("Quick Duck", systemImage: dontPanicMode ? "speaker.wave.1" : "waveform.path.badge.minus")
-                        }
-                        .tint(dontPanicMode ? .orange : .primary)
-                    }
-                }
+                // Toolbar is now empty - buttons moved to header
             }
             .sheet(isPresented: $showingScanSheet) {
                 ScannerView(bluetoothManager: bluetoothManager, isPresented: $showingScanSheet)
             }
         }
+    }
+    
+    // MARK: - Branded Header
+    
+    @ViewBuilder
+    private var brandedHeader: some View {
+        HStack(spacing: 16) {
+            // ChaoticVolt Logo (spans both rows)
+            Image("ChaoticVoltLogo")
+                .resizable()
+                .aspectRatio(contentMode: .fit)
+                .frame(width: 50, height: 50)
+            
+            VStack(alignment: .leading, spacing: 8) {
+                // Top row: App title
+                HStack(spacing: 0) {
+                    Text("42 decibels ")
+                        .font(.headline)
+                        .fontWeight(.bold)
+                    
+                    Text("by ChaoticVolt")
+                        .font(.headline)
+                }
+                
+                // Bottom row: Connection status
+                HStack(spacing: 12) {
+                    // Only show status and controls when Live (recent communication)
+                    if let galacticStatus = bluetoothManager.galacticStatus,
+                       galacticStatus.secondsSinceReceived < 3 {
+                        // Connection indicator with device name
+                        HStack(spacing: 8) {
+                            Text("connected to:")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                            
+                            Text(bluetoothManager.connectedSpeaker?.name ?? "Unknown")
+                                .font(.subheadline)
+                                .fontWeight(.medium)
+                        }
+                        
+                        Spacer()
+                        
+                        // Disconnect button
+                        Button {
+                            bluetoothManager.disconnect()
+                        } label: {
+                            Image(systemName: "xmark.circle")
+                                .font(.body)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(Color(.tertiarySystemBackground))
+                        )
+                    } else if case .connected = bluetoothManager.connectionState {
+                        // Connected but not Live - show status
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(Color.orange)
+                                .frame(width: 8, height: 8)
+                            
+                            Text("Not responding")
+                                .font(.subheadline)
+                                .foregroundStyle(.secondary)
+                        }
+                        
+                        Spacer()
+                        
+                        // Disconnect button
+                        Button {
+                            bluetoothManager.disconnect()
+                        } label: {
+                            Image(systemName: "xmark.circle")
+                                .font(.body)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(Color(.tertiarySystemBackground))
+                        )
+                    } else {
+                        // Not connected
+                        Text("Not connected")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                        
+                        Spacer()
+                        
+                        // Connect button
+                        Button {
+                            showingScanSheet = true
+                        } label: {
+                            Image(systemName: "plus.circle")
+                                .font(.body)
+                        }
+                        .buttonStyle(.plain)
+                        .padding(8)
+                        .background(
+                            Circle()
+                                .fill(Color(.tertiarySystemBackground))
+                        )
+                    }
+                }
+            }
+        }
+        .padding(.horizontal, 20)
+        .padding(.vertical, 16)
+        .background(
+            RoundedRectangle(cornerRadius: 20)
+                .fill(Color(.secondarySystemBackground))
+                .shadow(color: brandPurple.opacity(0.3), radius: 20, x: 0, y: 0)
+        )
+        .padding(.horizontal, 16)
+        .padding(.top, 8)
     }
     
     // MARK: - Don't Panic Mode
@@ -360,56 +541,48 @@ struct ContentView: View {
             
             HStack(spacing: 12) {
                 // Mute pill - interactive!
-                Button {
+                StatusPillCompact(
+                    title: "Mute",
+                    isActive: status.shieldStatus.isMuted,
+                    icon: "speaker.slash.fill",
+                    activeColor: .red,
+                    infoText: "No sound for a moment. Nobody say a word."
+                ) {
                     bluetoothManager.setMute(!status.shieldStatus.isMuted)
-                } label: {
-                    StatusPillCompact(
-                        title: "Mute",
-                        isActive: status.shieldStatus.isMuted,
-                        icon: "speaker.slash.fill",
-                        activeColor: .red
-                    )
                 }
-                .buttonStyle(.plain)
                 
                 // Audio Duck pill (Panic Mode) - interactive!
-                Button {
+                StatusPillCompact(
+                    title: "Duck",
+                    isActive: status.shieldStatus.isPanicMode,
+                    icon: "waveform.path.badge.minus",
+                    activeColor: .orange,
+                    infoText: "Instantly drops volume to 25% (−12 dB)."
+                ) {
                     bluetoothManager.setAudioDuck(!status.shieldStatus.isPanicMode)
-                } label: {
-                    StatusPillCompact(
-                        title: "Duck",
-                        isActive: status.shieldStatus.isPanicMode,
-                        icon: "waveform.path.badge.minus",
-                        activeColor: .orange
-                    )
                 }
-                .buttonStyle(.plain)
                 
                 // Loudness pill - interactive!
-                Button {
+                StatusPillCompact(
+                    title: "Loudness",
+                    isActive: status.shieldStatus.isLoudnessOn,
+                    icon: "speaker.wave.3",
+                    activeColor: .blue,
+                    infoText: "Fuller sound at lower volume."
+                ) {
                     bluetoothManager.setLoudness(enabled: !status.shieldStatus.isLoudnessOn)
-                } label: {
-                    StatusPillCompact(
-                        title: "Loudness",
-                        isActive: status.shieldStatus.isLoudnessOn,
-                        icon: "speaker.wave.3",
-                        activeColor: .blue
-                    )
                 }
-                .buttonStyle(.plain)
                 
                 // Normalizer pill (Limiter) - interactive!
-                Button {
+                StatusPillCompact(
+                    title: "Normalize",
+                    isActive: status.shieldStatus.isLimiterActive,
+                    icon: "waveform.path.ecg",
+                    activeColor: .green,
+                    infoText: "Makes speech clearer at lower volume."
+                ) {
                     bluetoothManager.setNormalizer(!status.shieldStatus.isLimiterActive)
-                } label: {
-                    StatusPillCompact(
-                        title: "Normalize",
-                        isActive: status.shieldStatus.isLimiterActive,
-                        icon: "waveform.path.ecg",
-                        activeColor: .green
-                    )
                 }
-                .buttonStyle(.plain)
             }
         }
         .padding()
@@ -515,6 +688,7 @@ struct ContentView: View {
 struct PresetButton: View {
     let preset: BluetoothManager.DSPPreset
     let isSelected: Bool
+    let brandColor: Color
     let action: () -> Void
     
     private var icon: String {
@@ -541,15 +715,15 @@ struct PresetButton: View {
                 
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(brandColor)
                 }
             }
             .padding()
-            .background(isSelected ? Color.blue.opacity(0.1) : Color(.secondarySystemBackground))
+            .background(isSelected ? brandColor.opacity(0.1) : Color(.secondarySystemBackground))
             .cornerRadius(12)
             .overlay(
                 RoundedRectangle(cornerRadius: 12)
-                    .stroke(isSelected ? Color.blue : Color.clear, lineWidth: 2)
+                    .stroke(isSelected ? brandColor : Color.clear, lineWidth: 2)
             )
         }
         .buttonStyle(.plain)
@@ -563,16 +737,47 @@ struct StatusPillCompact: View {
     let isActive: Bool
     let icon: String
     let activeColor: Color
+    var infoText: String? = nil
+    var onTap: (() -> Void)? = nil
+    
+    @State private var showingInfo = false
+    @State private var isPressed = false
     
     var body: some View {
         VStack(spacing: 4) {
-            Image(systemName: icon)
-                .font(.title3)
-                .foregroundStyle(isActive ? activeColor : .secondary)
-            
-            Text(title)
-                .font(.caption2)
-                .foregroundStyle(isActive ? activeColor : .secondary)
+            ZStack(alignment: .topTrailing) {
+                VStack(spacing: 4) {
+                    Image(systemName: icon)
+                        .font(.title3)
+                        .foregroundStyle(isActive ? activeColor : .secondary)
+                    
+                    Text(title)
+                        .font(.caption2)
+                        .foregroundStyle(isActive ? activeColor : .secondary)
+                }
+                .frame(maxWidth: .infinity)
+                
+                // Info button (if infoText is provided)
+                if let _ = infoText {
+                    Button {
+                        showingInfo = true
+                    } label: {
+                        Image(systemName: "info.circle.fill")
+                            .font(.caption2)
+                            .foregroundStyle(.secondary)
+                    }
+                    .buttonStyle(.plain)
+                    .offset(x: -4, y: 4)
+                    .popover(isPresented: $showingInfo) {
+                        if let infoText = infoText {
+                            Text(infoText)
+                                .font(.caption)
+                                .padding()
+                                .presentationCompactAdaptation(.popover)
+                        }
+                    }
+                }
+            }
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 8)
@@ -582,6 +787,28 @@ struct StatusPillCompact: View {
             RoundedRectangle(cornerRadius: 8)
                 .stroke(isActive ? activeColor : Color.secondary.opacity(0.3), lineWidth: 1)
         )
+        .scaleEffect(isPressed ? 0.98 : 1.0)
+        .animation(.easeInOut(duration: 0.1), value: isPressed)
+        .onTapGesture {
+            // Haptic feedback
+            let impact = UIImpactFeedbackGenerator(style: .light)
+            impact.impactOccurred()
+            
+            // Visual feedback
+            withAnimation(.easeInOut(duration: 0.1)) {
+                isPressed = true
+            }
+            
+            // Call the action
+            onTap?()
+            
+            // Reset after a short delay
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+                withAnimation(.easeInOut(duration: 0.1)) {
+                    isPressed = false
+                }
+            }
+        }
     }
 }
 
@@ -661,3 +888,4 @@ struct ScannerView: View {
 #Preview {
     ContentView()
 }
+

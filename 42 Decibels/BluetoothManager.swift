@@ -86,6 +86,27 @@ class BluetoothManager: NSObject, ObservableObject {
             }
         }
         
+        /// Effective volume level (0-100) after all caps and processing
+        var effectiveVolume: UInt8 {
+            return distortionFieldStrength
+        }
+        
+        /// Description of volume cap based on current preset
+        var volumeCapDescription: String? {
+            guard let preset = preset else { return nil }
+            
+            switch preset {
+            case .night:
+                return "Night max 60%"
+            case .office, .full, .speech:
+                // These presets have 100% cap, only show if normalizer is limiting
+                if shieldStatus.isLimiterActive {
+                    return "Normalizer reducing ~20%"
+                }
+                return nil
+            }
+        }
+        
         /// Returns seconds since iOS received this status update (more reliable than device's lastContact)
         var secondsSinceReceived: Int {
             return Int(Date().timeIntervalSince(receivedAt))
@@ -101,6 +122,7 @@ class BluetoothManager: NSObject, ObservableObject {
         case mute(Bool)
         case audioDuck(Bool)      // Panic button -> Audio Duck (reduce volume temporarily)
         case normalizer(Bool)     // Limiter button -> Normalizer/DRC
+        case setVolume(UInt8)     // Set volume trim (0-100)
         
         var data: Data {
             switch self {
@@ -116,6 +138,10 @@ class BluetoothManager: NSObject, ObservableObject {
                 return enabled ? Data([0x05, 0x01]) : Data([0x05, 0x00])
             case .normalizer(let enabled):
                 return enabled ? Data([0x06, 0x01]) : Data([0x06, 0x00])
+            case .setVolume(let level):
+                // Clamp to 0-100 range
+                let clampedLevel = min(100, max(0, level))
+                return Data([0x07, clampedLevel])
             }
         }
     }
@@ -128,10 +154,22 @@ class BluetoothManager: NSObject, ObservableObject {
     private var galacticStatusCharacteristic: CBCharacteristic?
     
     // Speaker UUIDs
-    private let serviceUUID = CBUUID(string: "00000001-1234-5678-9ABC-DEF012345678")
-    private let controlWriteUUID = CBUUID(string: "00000002-1234-5678-9ABC-DEF012345678")
-    private let statusNotifyUUID = CBUUID(string: "00000003-1234-5678-9ABC-DEF012345678")
-    private let galacticStatusUUID = CBUUID(string: "00000004-1234-5678-9ABC-DEF012345678")
+    nonisolated(unsafe) private let serviceUUID = CBUUID(string: "00000001-1234-5678-9ABC-DEF012345678")
+    nonisolated(unsafe) private let controlWriteUUID = CBUUID(string: "00000002-1234-5678-9ABC-DEF012345678")
+    nonisolated(unsafe) private let statusNotifyUUID = CBUUID(string: "00000003-1234-5678-9ABC-DEF012345678")
+    nonisolated(unsafe) private let galacticStatusUUID = CBUUID(string: "00000004-1234-5678-9ABC-DEF012345678")
+    
+    // Device name prefixes for fallback filtering
+    // If your devices don't advertise the service UUID, filter by name instead
+    private let validDeviceNamePrefixes = [
+        "42 Decibels",
+        "42DB",
+        "ChaoticVolt"
+        // Add more prefixes as needed for your device naming scheme
+    ]
+    
+    // OTA Manager
+    @Published var otaManager = OTAManager()
     
     // MARK: - Initialization
     
@@ -142,7 +180,9 @@ class BluetoothManager: NSObject, ObservableObject {
     
     // MARK: - Public Methods
     
-    func startScanning() {
+    /// Start scanning for devices. By default, only scans for our known devices.
+    /// - Parameter showAllDevices: If true, shows all BLE devices (for debugging). Default is false.
+    func startScanning(showAllDevices: Bool = false) {
         guard centralManager.state == .poweredOn else {
             connectionState = .error("Bluetooth is not available")
             return
@@ -151,8 +191,22 @@ class BluetoothManager: NSObject, ObservableObject {
         discoveredSpeakers.removeAll()
         connectionState = .scanning
         
-        // Scan for peripherals - you can specify service UUIDs if known
-        centralManager.scanForPeripherals(withServices: nil, options: [CBCentralManagerScanOptionAllowDuplicatesKey: false])
+        if showAllDevices {
+            // Debug mode: Show all devices (useful for development/troubleshooting)
+            print("⚠️ Scanning for ALL Bluetooth devices (debug mode)")
+            centralManager.scanForPeripherals(
+                withServices: nil,
+                options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            )
+        } else {
+            // Production mode: Only scan for peripherals advertising our custom service UUID
+            // This ensures we only see devices we can actually interact with
+            print("✅ Scanning for 42 Decibels devices only")
+            centralManager.scanForPeripherals(
+                withServices: [serviceUUID], 
+                options: [CBCentralManagerScanOptionAllowDuplicatesKey: false]
+            )
+        }
     }
     
     func stopScanning() {
@@ -206,7 +260,25 @@ class BluetoothManager: NSObject, ObservableObject {
         sendCommand(.normalizer(enabled))
     }
     
+    func setVolume(_ level: UInt8) {
+        sendCommand(.setVolume(level))
+    }
+    
     // MARK: - Private Methods
+    
+    /// Checks if a discovered peripheral is one of our known devices
+    private func isValidDevice(_ peripheral: CBPeripheral, advertisementData: [String: Any]) -> Bool {
+        // If we scanned with service UUID filter, all results are valid
+        // This check is mainly for fallback scenarios
+        
+        guard let name = peripheral.name else {
+            // No name = likely not our device
+            return false
+        }
+        
+        // Check if device name starts with any of our known prefixes
+        return validDeviceNamePrefixes.contains { name.hasPrefix($0) }
+    }
     
     private func sendCommand(_ command: Command) {
         guard let characteristic = writeCharacteristic,
@@ -250,8 +322,18 @@ extension BluetoothManager: CBCentralManagerDelegate {
     
     nonisolated func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
         Task { @MainActor in
-            // Only add peripherals with names (filters out many non-relevant devices)
-            if peripheral.name != nil, !discoveredSpeakers.contains(where: { $0.identifier == peripheral.identifier }) {
+            // When scanning with service UUID filter, all discovered devices are valid
+            // When scanning without filter (nil), we need to validate by name
+            // For maximum compatibility, we always validate
+            
+            guard isValidDevice(peripheral, advertisementData: advertisementData) else {
+                // Silently ignore devices that aren't ours
+                return
+            }
+            
+            // Avoid duplicates
+            if !discoveredSpeakers.contains(where: { $0.identifier == peripheral.identifier }) {
+                print("✅ Discovered valid device: \(peripheral.name ?? "Unknown") (RSSI: \(RSSI))")
                 discoveredSpeakers.append(peripheral)
             }
         }
@@ -264,8 +346,11 @@ extension BluetoothManager: CBCentralManagerDelegate {
             connectionState = .connected
             peripheral.delegate = self
             
+            // Set peripheral for OTA manager
+            otaManager.setPeripheral(peripheral)
+            
             // Discover all services (nil = discover all)
-            // This ensures we find the service containing GALACTIC_STATUS
+            // This ensures we find the service containing GALACTIC_STATUS and OTA characteristics
             peripheral.discoverServices(nil)
         }
     }
@@ -322,6 +407,29 @@ extension BluetoothManager: CBPeripheralDelegate {
         print("📋 Service \(service.uuid) has \(characteristics.count) characteristics:")
         for char in characteristics {
             print("   - \(char.uuid) [props: \(char.properties.rawValue)]")
+        }
+        
+        // Check if this service has OTA characteristics
+        let otaUUIDs = [
+            OTAManager.OTACharacteristics.credentials,
+            OTAManager.OTACharacteristics.url,
+            OTAManager.OTACharacteristics.control,
+            OTAManager.OTACharacteristics.status
+        ]
+        
+        let hasOTAChars = characteristics.contains { otaUUIDs.contains($0.uuid) }
+        
+        print("🔍 BluetoothManager: Checking service \(service.uuid) for OTA characteristics...")
+        print("   Has OTA chars: \(hasOTAChars)")
+        
+        if hasOTAChars {
+            print("   🎯 Found OTA characteristics in this service! Passing to OTA manager...")
+            // Let OTA manager handle these characteristics
+            Task { @MainActor in
+                otaManager.handleDiscoveredCharacteristics(characteristics, for: peripheral)
+            }
+        } else {
+            print("   ℹ️ No OTA characteristics in this service")
         }
         
         for characteristic in characteristics {
@@ -419,6 +527,9 @@ extension BluetoothManager: CBPeripheralDelegate {
                 parseGalacticStatus(data)
             } else if characteristic.uuid == statusNotifyUUID {
                 parseStatusResponse(data)
+            } else if characteristic.uuid == OTAManager.OTACharacteristics.status {
+                // Handle OTA status updates
+                otaManager.handleStatusUpdate(data)
             }
         }
     }
