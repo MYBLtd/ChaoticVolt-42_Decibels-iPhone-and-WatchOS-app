@@ -2,7 +2,7 @@
 
 Official iOS companion app for ChaoticVolt 42 Decibels audio devices.
 
-**Version:** 1.0.0
+**Version:** 1.0.1
 **Platform:** iOS 15.0+
 **Developer:** ChaoticVolt / MYBLtd
 
@@ -84,9 +84,7 @@ Interactive controls for real-time audio processing:
 ![Screenshot](docs/images/Watch-App_03.png)
 ![Screenshot](docs/images/Watch-App_04.png)
 
-![Screenshot](docs/images/iPhone-App_01.png)
-![Screenshot](docs/images/iPhone-App_02.png)
-![Screenshot](docs/images/iPhone-App_03.png)
+<img src="docs/images/iPhone-App_01.png" width="420" alt="iPhone App 01">
 
 
 ---
