@@ -78,13 +78,16 @@ Interactive controls for real-time audio processing:
 - Collapsible detailed status section
 
 ---
+### Apple Watch app
+<img src="docs/images/Watch-App_01.png" width="220" alt="Watch App 1.png">
+<img src="docs/images/Watch-App_02.png" width="220" alt="Watch App 2.png">
+<img src="docs/images/Watch-App_03.png" width="220" alt="Watch App 3.png">
+<img src="docs/images/Watch-App_04.png" width="220" alt="Watch App 4.png">
 
-![Screenshot](docs/images/Watch-App_01.png)
-![Screenshot](docs/images/Watch-App_02.png)
-![Screenshot](docs/images/Watch-App_03.png)
-![Screenshot](docs/images/Watch-App_04.png)
-
-<img src="docs/images/iPhone-App_01.png" width="420" alt="iPhone App 01">
+### iPhone app
+<img src="docs/images/iPhone-App_02.png" width="320" alt="iPhone App 1">
+<img src="docs/images/iPhone-App_03.png" width="320" alt="iPhone App 2">
+<img src="docs/images/iPhone-App_01.png" width="320" alt="iPhone App 3">
 
 
 ---
