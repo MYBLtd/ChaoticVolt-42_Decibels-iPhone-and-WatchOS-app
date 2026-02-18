@@ -44,7 +44,7 @@ struct ContentView: View {
     @State private var dontPanicMode = false
     @State private var panicModeTimer: Timer?
     @State private var currentTime = Date()  // For updating Last Contact display
-    @State private var isDetailedStatusExpanded = true  // Expanded by default
+    @State private var isDetailedStatusExpanded = false  // Collapsed by default
     
     // ChaoticVolt brand color
     private let brandPurple = Color(hex: "6F4CFF")
@@ -282,6 +282,54 @@ struct ContentView: View {
                         
                         // OTA Firmware Update Section
                         OTASettingsView(bluetoothManager: bluetoothManager, brandColor: brandPurple)
+                        
+                        // TEST: Sine Wave Test Button (phone only, not for watch)
+                        VStack(alignment: .leading, spacing: 12) {
+                            Label("TEST: Sine Wave Generator", systemImage: "waveform.path")
+                                .font(.headline)
+                                .foregroundStyle(.orange)
+                                .padding(.horizontal)
+                            
+                            HStack(spacing: 12) {
+                                Button {
+                                    bluetoothManager.setSineTest(true)
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "speaker.wave.2.fill")
+                                        Text("Start 1kHz Tone")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.green.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.green, lineWidth: 2)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                                
+                                Button {
+                                    bluetoothManager.setSineTest(false)
+                                } label: {
+                                    HStack {
+                                        Image(systemName: "stop.fill")
+                                        Text("Stop Test")
+                                    }
+                                    .frame(maxWidth: .infinity)
+                                    .padding()
+                                    .background(Color.red.opacity(0.2))
+                                    .cornerRadius(12)
+                                    .overlay(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .stroke(Color.red, lineWidth: 2)
+                                    )
+                                }
+                                .buttonStyle(.plain)
+                            }
+                            .padding(.horizontal)
+                        }
+                        .padding(.vertical, 8)
                         
                         }  // Close the if case .connected, let galacticStatus block
                     }
@@ -539,6 +587,7 @@ struct ContentView: View {
                 }
             }
             
+            // First Row
             HStack(spacing: 12) {
                 // Mute pill - interactive!
                 StatusPillCompact(
@@ -583,6 +632,38 @@ struct ContentView: View {
                 ) {
                     bluetoothManager.setNormalizer(!status.shieldStatus.isLimiterActive)
                 }
+            }
+            
+            // Second Row
+            HStack(spacing: 12) {
+                // Bypass pill - interactive!
+                StatusPillCompact(
+                    title: "Bypass",
+                    isActive: status.shieldStatus.isBypassActive,
+                    icon: "arrow.triangle.turn.up.right.circle",
+                    activeColor: .purple,
+                    infoText: "Bypass EQ processing for pure audio."
+                ) {
+                    bluetoothManager.setBypass(!status.shieldStatus.isBypassActive)
+                }
+                
+                // Bass boost pill - interactive!
+                StatusPillCompact(
+                    title: "Bass boost",
+                    isActive: status.shieldStatus.isBassBoostActive,
+                    icon: "waveform.badge.magnifyingglass",
+                    activeColor: .indigo,
+                    infoText: "Enhanced low-frequency response."
+                ) {
+                    bluetoothManager.setBassBoost(!status.shieldStatus.isBassBoostActive)
+                }
+                
+                // Empty spacers to maintain grid alignment
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                
+                Color.clear
+                    .frame(maxWidth: .infinity)
             }
         }
         .padding()

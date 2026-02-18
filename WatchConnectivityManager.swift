@@ -27,7 +27,7 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     
     // MARK: - Connection Info
     
-    struct ConnectionInfo: Codable {
+    struct ConnectionInfo: Codable, Equatable {
         let isConnected: Bool
         let speakerName: String?
         let speakerIdentifier: String?
@@ -41,13 +41,16 @@ class WatchConnectivityManager: NSObject, ObservableObject {
     
     // MARK: - Message Keys
     
-    private enum MessageKey {
+    enum MessageKey {
         static let connectionState = "connectionState"
         static let command = "command"
         static let commandType = "commandType"
         static let commandData = "commandData"
         static let galacticStatus = "galacticStatus"
     }
+    
+    // Make keys accessible externally for reply handlers
+    static let connectionStateKey = "connectionState"
     
     // MARK: - Command Types
     

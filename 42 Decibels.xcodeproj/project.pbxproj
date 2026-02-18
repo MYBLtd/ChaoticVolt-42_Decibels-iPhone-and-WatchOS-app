@@ -7,9 +7,22 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		0028F77C2F2A2D8500DA10DD /* CHANGES_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 0028F77B2F2A2D8500DA10DD /* CHANGES_SUMMARY.md */; };
+		0028F77E2F2A2DAF00DA10DD /* BLE_PROTOCOL_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 0028F77D2F2A2DAF00DA10DD /* BLE_PROTOCOL_REFERENCE.md */; };
+		0028F7802F2A2DD200DA10DD /* UI_LAYOUT_GUIDE.md in Resources */ = {isa = PBXBuildFile; fileRef = 0028F77F2F2A2DD200DA10DD /* UI_LAYOUT_GUIDE.md */; };
+		0028F7822F2A2E0500DA10DD /* IMPLEMENTATION_COMPLETE.md in Resources */ = {isa = PBXBuildFile; fileRef = 0028F7812F2A2E0500DA10DD /* IMPLEMENTATION_COMPLETE.md */; };
+		0028F7842F2A2E3E00DA10DD /* UI_VISUAL_REFERENCE.md in Resources */ = {isa = PBXBuildFile; fileRef = 0028F7832F2A2E3E00DA10DD /* UI_VISUAL_REFERENCE.md */; };
 		003C16D52F262A1B00AFA4EE /* 42 Decibels Watch App Watch App.app in Embed Watch Content */ = {isa = PBXBuildFile; fileRef = 003C16CB2F262A1A00AFA4EE /* 42 Decibels Watch App Watch App.app */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		006F2E7A2F24BE0300AB083D /* WIFI_DETECTION_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 006F2E792F24BE0300AB083D /* WIFI_DETECTION_SETUP.md */; };
 		006F2E7C2F24BE1800AB083D /* WIFI_DETECTION_FLOW.md in Resources */ = {isa = PBXBuildFile; fileRef = 006F2E7B2F24BE1800AB083D /* WIFI_DETECTION_FLOW.md */; };
+		007216272F2A3BF200A838D7 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 007216262F2A3BF200A838D7 /* WatchConnectivityManager.swift */; };
+		007216292F2A3CD700A838D7 /* HYBRID_WATCH_SETUP.md in Resources */ = {isa = PBXBuildFile; fileRef = 007216282F2A3CD700A838D7 /* HYBRID_WATCH_SETUP.md */; };
+		0072162B2F2A3D1200A838D7 /* HYBRID_WATCH_QUICK_REF.md in Resources */ = {isa = PBXBuildFile; fileRef = 0072162A2F2A3D1200A838D7 /* HYBRID_WATCH_QUICK_REF.md */; };
+		0072162D2F2A3D4A00A838D7 /* HYBRID_WATCH_MIGRATION.md in Resources */ = {isa = PBXBuildFile; fileRef = 0072162C2F2A3D4A00A838D7 /* HYBRID_WATCH_MIGRATION.md */; };
+		0072162F2F2A3D9100A838D7 /* HYBRID_WATCH_SUMMARY.md in Resources */ = {isa = PBXBuildFile; fileRef = 0072162E2F2A3D9100A838D7 /* HYBRID_WATCH_SUMMARY.md */; };
+		007216312F2A3DE800A838D7 /* HYBRID_WATCH_FLOWS.md in Resources */ = {isa = PBXBuildFile; fileRef = 007216302F2A3DE800A838D7 /* HYBRID_WATCH_FLOWS.md */; };
+		007216332F2A3E3700A838D7 /* HYBRID_WATCH_CHECKLIST.md in Resources */ = {isa = PBXBuildFile; fileRef = 007216322F2A3E3700A838D7 /* HYBRID_WATCH_CHECKLIST.md */; };
+		007216342F2A401F00A838D7 /* WatchConnectivityManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 007216262F2A3BF200A838D7 /* WatchConnectivityManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -37,9 +50,21 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		0028F77B2F2A2D8500DA10DD /* CHANGES_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = CHANGES_SUMMARY.md; sourceTree = "<group>"; };
+		0028F77D2F2A2DAF00DA10DD /* BLE_PROTOCOL_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = BLE_PROTOCOL_REFERENCE.md; sourceTree = "<group>"; };
+		0028F77F2F2A2DD200DA10DD /* UI_LAYOUT_GUIDE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_LAYOUT_GUIDE.md; sourceTree = "<group>"; };
+		0028F7812F2A2E0500DA10DD /* IMPLEMENTATION_COMPLETE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = IMPLEMENTATION_COMPLETE.md; sourceTree = "<group>"; };
+		0028F7832F2A2E3E00DA10DD /* UI_VISUAL_REFERENCE.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = UI_VISUAL_REFERENCE.md; sourceTree = "<group>"; };
 		003C16CB2F262A1A00AFA4EE /* 42 Decibels Watch App Watch App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "42 Decibels Watch App Watch App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		006F2E792F24BE0300AB083D /* WIFI_DETECTION_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WIFI_DETECTION_SETUP.md; sourceTree = "<group>"; };
 		006F2E7B2F24BE1800AB083D /* WIFI_DETECTION_FLOW.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = WIFI_DETECTION_FLOW.md; sourceTree = "<group>"; };
+		007216262F2A3BF200A838D7 /* WatchConnectivityManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchConnectivityManager.swift; sourceTree = "<group>"; };
+		007216282F2A3CD700A838D7 /* HYBRID_WATCH_SETUP.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_SETUP.md; sourceTree = "<group>"; };
+		0072162A2F2A3D1200A838D7 /* HYBRID_WATCH_QUICK_REF.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_QUICK_REF.md; sourceTree = "<group>"; };
+		0072162C2F2A3D4A00A838D7 /* HYBRID_WATCH_MIGRATION.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_MIGRATION.md; sourceTree = "<group>"; };
+		0072162E2F2A3D9100A838D7 /* HYBRID_WATCH_SUMMARY.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_SUMMARY.md; sourceTree = "<group>"; };
+		007216302F2A3DE800A838D7 /* HYBRID_WATCH_FLOWS.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_FLOWS.md; sourceTree = "<group>"; };
+		007216322F2A3E3700A838D7 /* HYBRID_WATCH_CHECKLIST.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = HYBRID_WATCH_CHECKLIST.md; sourceTree = "<group>"; };
 		00C0C1732F20DA5F0013A7C7 /* 42 Decibels.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "42 Decibels.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -95,6 +120,18 @@
 				00C0C1742F20DA5F0013A7C7 /* Products */,
 				006F2E792F24BE0300AB083D /* WIFI_DETECTION_SETUP.md */,
 				006F2E7B2F24BE1800AB083D /* WIFI_DETECTION_FLOW.md */,
+				0028F77B2F2A2D8500DA10DD /* CHANGES_SUMMARY.md */,
+				0028F77D2F2A2DAF00DA10DD /* BLE_PROTOCOL_REFERENCE.md */,
+				0028F77F2F2A2DD200DA10DD /* UI_LAYOUT_GUIDE.md */,
+				0028F7812F2A2E0500DA10DD /* IMPLEMENTATION_COMPLETE.md */,
+				0028F7832F2A2E3E00DA10DD /* UI_VISUAL_REFERENCE.md */,
+				007216262F2A3BF200A838D7 /* WatchConnectivityManager.swift */,
+				007216282F2A3CD700A838D7 /* HYBRID_WATCH_SETUP.md */,
+				0072162A2F2A3D1200A838D7 /* HYBRID_WATCH_QUICK_REF.md */,
+				0072162C2F2A3D4A00A838D7 /* HYBRID_WATCH_MIGRATION.md */,
+				0072162E2F2A3D9100A838D7 /* HYBRID_WATCH_SUMMARY.md */,
+				007216302F2A3DE800A838D7 /* HYBRID_WATCH_FLOWS.md */,
+				007216322F2A3E3700A838D7 /* HYBRID_WATCH_CHECKLIST.md */,
 			);
 			sourceTree = "<group>";
 		};
@@ -206,8 +243,19 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				0028F7842F2A2E3E00DA10DD /* UI_VISUAL_REFERENCE.md in Resources */,
+				0028F7802F2A2DD200DA10DD /* UI_LAYOUT_GUIDE.md in Resources */,
+				0028F77C2F2A2D8500DA10DD /* CHANGES_SUMMARY.md in Resources */,
+				0028F7822F2A2E0500DA10DD /* IMPLEMENTATION_COMPLETE.md in Resources */,
+				0072162D2F2A3D4A00A838D7 /* HYBRID_WATCH_MIGRATION.md in Resources */,
 				006F2E7C2F24BE1800AB083D /* WIFI_DETECTION_FLOW.md in Resources */,
+				0028F77E2F2A2DAF00DA10DD /* BLE_PROTOCOL_REFERENCE.md in Resources */,
 				006F2E7A2F24BE0300AB083D /* WIFI_DETECTION_SETUP.md in Resources */,
+				007216332F2A3E3700A838D7 /* HYBRID_WATCH_CHECKLIST.md in Resources */,
+				0072162F2F2A3D9100A838D7 /* HYBRID_WATCH_SUMMARY.md in Resources */,
+				0072162B2F2A3D1200A838D7 /* HYBRID_WATCH_QUICK_REF.md in Resources */,
+				007216312F2A3DE800A838D7 /* HYBRID_WATCH_FLOWS.md in Resources */,
+				007216292F2A3CD700A838D7 /* HYBRID_WATCH_SETUP.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -218,6 +266,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				007216342F2A401F00A838D7 /* WatchConnectivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -225,6 +274,7 @@
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				007216272F2A3BF200A838D7 /* WatchConnectivityManager.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -246,7 +296,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = GH29Q74PV6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -258,7 +308,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.chaoticvolt.42Decibels.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -281,7 +331,7 @@
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = GH29Q74PV6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -293,7 +343,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				PRODUCT_BUNDLE_IDENTIFIER = eu.chaoticvolt.42Decibels.watchkitapp;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SDKROOT = watchos;
@@ -438,7 +488,7 @@
 				CODE_SIGN_ENTITLEMENTS = "42 Decibels/42 Decibels.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = GH29Q74PV6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -456,7 +506,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				NEW_SETTING = "";
 				PRODUCT_BUNDLE_IDENTIFIER = eu.chaoticvolt.42Decibels;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -483,7 +533,7 @@
 				CODE_SIGN_ENTITLEMENTS = "42 Decibels/42 Decibels.entitlements";
 				CODE_SIGN_IDENTITY = "Apple Development";
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 4;
 				DEVELOPMENT_TEAM = GH29Q74PV6;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
@@ -501,7 +551,7 @@
 					"$(inherited)",
 					"@executable_path/Frameworks",
 				);
-				MARKETING_VERSION = 1.0;
+				MARKETING_VERSION = 1.2.2;
 				NEW_SETTING = "";
 				PRODUCT_BUNDLE_IDENTIFIER = eu.chaoticvolt.42Decibels;
 				PRODUCT_NAME = "$(TARGET_NAME)";

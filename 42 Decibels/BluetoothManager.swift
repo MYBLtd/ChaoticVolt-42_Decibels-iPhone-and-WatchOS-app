@@ -67,12 +67,16 @@ class BluetoothManager: NSObject, ObservableObject {
             let isPanicMode: Bool      // bit 1
             let isLoudnessOn: Bool     // bit 2
             let isLimiterActive: Bool  // bit 3
+            let isBypassActive: Bool   // bit 4
+            let isBassBoostActive: Bool // bit 5
             
             init(byte: UInt8) {
                 self.isMuted = (byte & 0x01) != 0
                 self.isPanicMode = (byte & 0x02) != 0
                 self.isLoudnessOn = (byte & 0x04) != 0
                 self.isLimiterActive = (byte & 0x08) != 0
+                self.isBypassActive = (byte & 0x10) != 0
+                self.isBassBoostActive = (byte & 0x20) != 0
             }
         }
         
@@ -123,6 +127,9 @@ class BluetoothManager: NSObject, ObservableObject {
         case audioDuck(Bool)      // Panic button -> Audio Duck (reduce volume temporarily)
         case normalizer(Bool)     // Limiter button -> Normalizer/DRC
         case setVolume(UInt8)     // Set volume trim (0-100)
+        case bypass(Bool)         // DSP Bypass mode
+        case bassBoost(Bool)      // Bass boost
+        case sineTest(Bool)       // TEST: Sine wave test mode (1kHz tone)
         
         var data: Data {
             switch self {
@@ -142,6 +149,12 @@ class BluetoothManager: NSObject, ObservableObject {
                 // Clamp to 0-100 range
                 let clampedLevel = min(100, max(0, level))
                 return Data([0x07, clampedLevel])
+            case .bypass(let enabled):
+                return enabled ? Data([0x08, 0x01]) : Data([0x08, 0x00])
+            case .bassBoost(let enabled):
+                return enabled ? Data([0x09, 0x01]) : Data([0x09, 0x00])
+            case .sineTest(let enabled):
+                return enabled ? Data([0x0A, 0x01]) : Data([0x0A, 0x00])
             }
         }
     }
@@ -172,6 +185,7 @@ class BluetoothManager: NSObject, ObservableObject {
     // OTA Manager (iOS/iPadOS only)
     #if !os(watchOS)
     @Published var otaManager = OTAManager()
+    var watchConnectivityManager: WatchConnectivityManager?
     #endif
     
     // MARK: - Initialization
@@ -179,7 +193,71 @@ class BluetoothManager: NSObject, ObservableObject {
     override init() {
         super.init()
         centralManager = CBCentralManager(delegate: self, queue: nil)
+        
+        #if !os(watchOS)
+        // iOS: Set up WatchConnectivity and observers
+        setupWatchConnectivity()
+        #endif
     }
+    
+    #if !os(watchOS)
+    // MARK: - WatchConnectivity Setup (iOS Only)
+    
+    private func setupWatchConnectivity() {
+        watchConnectivityManager = WatchConnectivityManager()
+        
+        // Observe commands from watch
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleCommandFromWatch(_:)),
+            name: .executeCommandFromWatch,
+            object: nil
+        )
+        
+        // Observe requests for connection state
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(handleConnectionStateRequest(_:)),
+            name: .requestConnectionStateForWatch,
+            object: nil
+        )
+    }
+    
+    @objc private func handleCommandFromWatch(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let commandType = userInfo["commandType"] as? WatchConnectivityManager.CommandType,
+              let commandData = userInfo["commandData"] as? Data else { return }
+        
+        print("📲 Executing command from watch: \(commandType)")
+        
+        // Execute the command via BLE
+        sendCommand(commandData)
+    }
+    
+    @objc private func handleConnectionStateRequest(_ notification: Notification) {
+        guard let userInfo = notification.userInfo,
+              let replyHandler = userInfo["replyHandler"] as? ([String: Any]) -> Void else { return }
+        
+        // Send current connection state back to watch
+        let info = WatchConnectivityManager.ConnectionInfo(
+            isConnected: connectionState == .connected,
+            speakerName: connectedSpeaker?.name,
+            speakerIdentifier: connectedSpeaker?.identifier.uuidString
+        )
+        
+        if let data = try? JSONEncoder().encode(info) {
+            replyHandler([WatchConnectivityManager.connectionStateKey: data])
+        }
+    }
+    
+    private func updateWatchConnectionState() {
+        watchConnectivityManager?.updateConnectionState(
+            isConnected: connectionState == .connected,
+            speakerName: connectedSpeaker?.name,
+            speakerIdentifier: connectedSpeaker?.identifier.uuidString
+        )
+    }
+    #endif
     
     // MARK: - Public Methods
     
@@ -268,6 +346,11 @@ class BluetoothManager: NSObject, ObservableObject {
         writeCharacteristic = nil
         connectedSpeaker = nil
         connectionState = .disconnected
+        
+        #if !os(watchOS)
+        // Notify watch that we're disconnected
+        updateWatchConnectionState()
+        #endif
         currentPreset = nil
         loudnessEnabled = nil
         galacticStatus = nil
@@ -303,6 +386,19 @@ class BluetoothManager: NSObject, ObservableObject {
         sendCommand(.setVolume(level))
     }
     
+    func setBypass(_ enabled: Bool) {
+        sendCommand(.bypass(enabled))
+    }
+    
+    func setBassBoost(_ enabled: Bool) {
+        sendCommand(.bassBoost(enabled))
+    }
+    
+    // TEST: Sine wave test mode
+    func setSineTest(_ enabled: Bool) {
+        sendCommand(.sineTest(enabled))
+    }
+    
     // MARK: - Private Methods
     
     /// Checks if a discovered peripheral is one of our known devices
@@ -335,6 +431,23 @@ class BluetoothManager: NSObject, ObservableObject {
         
         let hexString = data.map { String(format: "%02X", $0) }.joined()
         print("📤 Sent command: \(hexString) using \(writeType == .withResponse ? "withResponse" : "withoutResponse")")
+    }
+    
+    // Overload to accept raw Data (for commands from watch)
+    private func sendCommand(_ data: Data) {
+        guard let characteristic = writeCharacteristic,
+              let peripheral = connectedSpeaker else {
+            print("❌ Cannot send command: Not connected or characteristic not found")
+            return
+        }
+        
+        // Try to use .withResponse first, fall back to .withoutResponse if needed
+        let writeType: CBCharacteristicWriteType = characteristic.properties.contains(.write) ? .withResponse : .withoutResponse
+        
+        peripheral.writeValue(data, for: characteristic, type: writeType)
+        
+        let hexString = data.map { String(format: "%02X", $0) }.joined()
+        print("📤 Sent command (raw): \(hexString) using \(writeType == .withResponse ? "withResponse" : "withoutResponse")")
     }
 }
 
@@ -392,6 +505,8 @@ extension BluetoothManager: CBCentralManagerDelegate {
             // Set peripheral for OTA manager (iOS/iPadOS only)
             #if !os(watchOS)
             otaManager.setPeripheral(peripheral)
+            // Notify watch about connection
+            updateWatchConnectionState()
             #endif
             
             // Discover all services (nil = discover all)
@@ -689,6 +804,14 @@ extension BluetoothManager: CBPeripheralDelegate {
             let value = data[1]
             print("✅ Normalizer state: \(value == 0x01 ? "enabled (DRC active)" : "disabled")")
             
+        case 0x08: // Bypass response
+            let value = data[1]
+            print("✅ DSP Bypass state: \(value == 0x01 ? "enabled (EQ bypassed)" : "disabled (full DSP)")")
+            
+        case 0x09: // Bass boost response
+            let value = data[1]
+            print("✅ Bass Boost state: \(value == 0x01 ? "enabled (enhanced bass)" : "disabled")")
+            
         default:
             print("⚠️ Unknown response type: 0x\(String(format: "%02X", commandType))")
         }
@@ -727,6 +850,11 @@ extension BluetoothManager: CBPeripheralDelegate {
         currentPreset = status.preset
         loudnessEnabled = status.shieldStatus.isLoudnessOn
         
+        #if !os(watchOS)
+        // Forward status update to watch
+        watchConnectivityManager?.updateGalacticStatus(status)
+        #endif
+        
         print("🌌 Galactic Status:")
         print("   Protocol: 0x\(String(format: "%02X", status.protocolVersion))")
         print("   Quantum Flavor: \(status.preset?.rawValue ?? "UNKNOWN")")
@@ -735,6 +863,8 @@ extension BluetoothManager: CBPeripheralDelegate {
         print("      - Panic Mode: \(status.shieldStatus.isPanicMode)")
         print("      - Loudness: \(status.shieldStatus.isLoudnessOn)")
         print("      - Limiter Active: \(status.shieldStatus.isLimiterActive)")
+        print("      - Bypass Active: \(status.shieldStatus.isBypassActive)")
+        print("      - Bass Boost Active: \(status.shieldStatus.isBassBoostActive)")
         print("   Energy Core Level: \(status.energyCoreLevel)")
         print("   Distortion Field: \(status.distortionFieldStrength)")
         print("   Energy Core: \(status.energyCore)")
