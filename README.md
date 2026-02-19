@@ -504,28 +504,46 @@ func setNewFeature(_ enabled: Bool) {
 }
 ```
 
-### Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Run tests
-5. Submit a pull request
-
 ---
 
 ## Support
 
 For issues or questions:
 - **Email**: support@chaoticvolt.eu
-- **GitHub**: https://github.com/MYBLtd/42_Decibels
+- **GitHub**: https://github.com/MYBLtd/ChaoticVolt-42_Decibels-iPhone-and-WatchOS-app
 
 ---
+
+## Related Projects
+
+This app is one of three projects that form the **42dB audio system**:
+
+| Project | Repository | Role |
+|---------|-----------|------|
+| **42dB STM32 DSP Engine** | [ChaoticVolt-42dB_STM32_DSP_engine](https://github.com/MYBLtd/ChaoticVolt-42dB_STM32_DSP_engine) | Real-time audio DSP processor |
+| **42dB iPhone & Apple Watch App** (this repo) | [ChaoticVolt-42_Decibels-iPhone-and-WatchOS-app](https://github.com/MYBLtd/ChaoticVolt-42_Decibels-iPhone-and-WatchOS-app) | BLE GATT control interface |
+| **ESP32 BLE GATT / A2DP firmware** | [ChoticVolt-ESP32_I2S_Master_with_BLE_GATT](https://github.com/MYBLtd/ChoticVolt-ESP32_I2S_Master_with_BLE_GATT) | A2DP Bluetooth sink + GATT relay |
+
+### Version Compatibility
+
+The three projects communicate over a shared **BLE GATT protocol**. When the protocol changes, all three must be updated together:
+
+| Protocol | STM32 DSP Engine | ESP32 Firmware | iPhone/Watch App |
+|----------|-----------------|----------------|-----------------|
+| v1 | v0.3.0 – v0.5.x | v2.4.1 – v2.4.3 | v1.0.x |
 
 ## License
 
-Copyright 2026 ChaoticVolt / MYBLtd. All rights reserved.
+PolyForm Noncommercial 1.0.0 — See [LICENSE.txt](LICENSE.txt). Commercial use requires explicit written permission.
+
+## Author
+
+Robin Kluit
+
+## Maintenance
+
+This repo currently does not accept external pull requests. Please use Issues or Discussions for reports and suggestions.
 
 ---
 
-*Documentation last updated: January 25, 2026*
+*Documentation last updated: 2026-02-19*
