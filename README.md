@@ -509,7 +509,6 @@ func setNewFeature(_ enabled: Bool) {
 ## Support
 
 For issues or questions:
-- **Email**: support@chaoticvolt.eu
 - **GitHub**: https://github.com/MYBLtd/ChaoticVolt-42_Decibels-iPhone-and-WatchOS-app
 
 ---
