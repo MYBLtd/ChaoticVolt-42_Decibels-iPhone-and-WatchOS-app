@@ -532,6 +532,8 @@ The three projects communicate over a shared **BLE GATT protocol**. When the pro
 |----------|-----------------|----------------|-----------------|
 | v1 | v0.3.0 – v0.5.x | v2.4.1 – v2.4.3 | v1.0.x |
 
+> **Historical note:** ESP32 firmware v2.3.1 and earlier contained its own DSP processing chain running on the ESP32. This was removed in v2.4.0 when DSP was migrated to the STM32 engine. Tag [v2.3.1](https://github.com/MYBLtd/ChoticVolt-ESP32_I2S_Master_with_BLE_GATT/releases/tag/v2.3.1) is the last version with ESP32-side DSP.
+
 ## License
 
 PolyForm Noncommercial 1.0.0 — See [LICENSE.txt](LICENSE.txt). Commercial use requires explicit written permission.
